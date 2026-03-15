@@ -1,0 +1,85 @@
+{
+  "project": "task-manager",
+  "goals": [
+    {
+      "id": "P1-task-dataclass",
+      "phase": 1,
+      "description": "Task dataclass with all fields and to_dict/from_dict",
+      "status": "passed",
+      "dependencies": [],
+      "verify": "pytest tests/test_task.py -v"
+    },
+    {
+      "id": "P1-storage",
+      "phase": 1,
+      "description": "load_tasks, save_tasks, get_next_id in storage.py",
+      "status": "passed",
+      "dependencies": ["P1-task-dataclass"],
+      "verify": "pytest tests/test_storage.py -v"
+    },
+    {
+      "id": "P2-cli-entrypoint",
+      "phase": 2,
+      "description": "Click group entry point in src/main.py",
+      "status": "pending",
+      "dependencies": ["P1-storage"],
+      "verify": "python -m src.main --help"
+    },
+    {
+      "id": "P2-add-command",
+      "phase": 2,
+      "description": "task add command: title required, description/due_date/priority optional",
+      "status": "pending",
+      "dependencies": ["P2-cli-entrypoint"],
+      "verify": "pytest tests/test_add.py -v"
+    },
+    {
+      "id": "P3-list-command",
+      "phase": 3,
+      "description": "task list command with --status and --priority filters",
+      "status": "pending",
+      "dependencies": ["P2-add-command"],
+      "verify": "pytest tests/test_list.py -v"
+    },
+    {
+      "id": "P3-done-command",
+      "phase": 3,
+      "description": "task done <id> marks a task as done",
+      "status": "pending",
+      "dependencies": ["P2-add-command"],
+      "verify": "pytest tests/test_done.py -v"
+    },
+    {
+      "id": "P3-delete-command",
+      "phase": 3,
+      "description": "task delete <id> removes a task",
+      "status": "pending",
+      "dependencies": ["P2-add-command"],
+      "verify": "pytest tests/test_delete.py -v"
+    },
+    {
+      "id": "P3-edit-command",
+      "phase": 3,
+      "description": "task edit <id> updates title/description/due_date/priority",
+      "status": "pending",
+      "dependencies": ["P2-add-command"],
+      "verify": "pytest tests/test_edit.py -v"
+    },
+    {
+      "id": "P4-search-command",
+      "phase": 4,
+      "description": "task search <keyword> searches title and description",
+      "status": "pending",
+      "dependencies": ["P3-list-command"],
+      "verify": "pytest tests/test_search.py -v"
+    },
+    {
+      "id": "P4-error-handling",
+      "phase": 4,
+      "description": "User-friendly error messages for missing/invalid task IDs",
+      "status": "pending",
+      "dependencies": ["P3-done-command", "P3-delete-command", "P3-edit-command"],
+      "verify": "pytest tests/ -v"
+    }
+  ]
+}
