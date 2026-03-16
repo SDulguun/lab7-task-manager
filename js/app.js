@@ -111,10 +111,12 @@ function handleTaskComplete(taskId) {
     flyTaskCard(taskId, () => {
       updateTask(taskId, { status: 'completed' });
       refreshFromStorage();
+      showToast('Task completed!');
     });
   } else {
     updateTask(taskId, { status: 'pending' });
     refreshFromStorage();
+    showToast('Task marked as pending.');
   }
 }
 
@@ -579,6 +581,27 @@ function bindStaticEvents() {
     }
   });
 }
+
+/* ════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ════════════════════════════════════════ */
+function showToast(msg, duration = 2500) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('out');
+    toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  }, duration);
+}
+
+// Expose for use in handlers
+window._showToast = showToast;
 
 /* ════════════════════════════════════════
    BOOTSTRAP
