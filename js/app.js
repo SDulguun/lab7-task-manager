@@ -407,7 +407,7 @@ function closeConfirm() {
 function handleTabSwitch(tab) {
   state.mobileTab = tab;
 
-  const sidebar   = document.getElementById('sidebar');
+  const sidebar    = document.getElementById('sidebar');
   const rightPanel = document.getElementById('right-panel');
 
   // Close overlays first
@@ -415,17 +415,19 @@ function handleTabSwitch(tab) {
   rightPanel?.classList.remove('mobile-active');
 
   if (tab === 'home') {
-    // Nothing extra, center panel is default
+    // Default center panel
   } else if (tab === 'calendar') {
+    renderMobileCalendar();
     rightPanel?.classList.add('mobile-active');
   } else if (tab === 'add') {
     openTaskModal(null);
-    return; // don't change active tab indicator
+    return;
   } else if (tab === 'stats') {
+    renderMobileStats();
     sidebar?.classList.add('mobile-active');
   }
 
-  // Update active indicator
+  // Update active indicator + bounce
   document.querySelectorAll('.bottom-nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
     if (btn.dataset.tab === tab) {
@@ -433,6 +435,96 @@ function handleTabSwitch(tab) {
       btn.querySelector('svg')?.addEventListener('animationend', () => btn.classList.remove('bounce'), { once: true });
     }
   });
+}
+
+/* ── Mobile stats screen (fills sidebar overlay) ── */
+function renderMobileStats() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+
+  const data = loadData();
+  const { tasks } = data;
+
+  const completed  = tasks.filter(t => t.status === 'completed').length;
+  const ongoing    = tasks.filter(t => t.status === 'ongoing').length;
+  const pending    = tasks.filter(t => t.status === 'pending').length;
+  const cancelled  = tasks.filter(t => t.status === 'cancelled').length;
+
+  sidebar.innerHTML = `
+    <div style="width:100%;position:relative;padding-bottom:20px">
+      <button class="mobile-overlay-close" id="stats-close">&times;</button>
+      <div class="mobile-date-header">
+        <span>Tasks Overview</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card stat-card--completed">
+          <div class="stat-number">${completed.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card stat-card--ongoing">
+          <div class="stat-number">${ongoing.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Ongoing</div>
+        </div>
+        <div class="stat-card stat-card--pending">
+          <div class="stat-number">${pending.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card stat-card--cancelled">
+          <div class="stat-number">${cancelled.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Cancelled</div>
+        </div>
+      </div>
+      <div class="mobile-section-label">Groups</div>
+      <div style="padding:0 14px">
+        ${data.groups.map(g => {
+          const gTotal = tasks.filter(t => t.groupId === g.id).length;
+          const gDone  = tasks.filter(t => t.groupId === g.id && t.status === 'completed').length;
+          const pct    = gTotal === 0 ? 0 : Math.round(gDone / gTotal * 100);
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;font-size:.8rem">
+              <span style="display:flex;align-items:center;gap:6px">
+                <span style="width:8px;height:8px;border-radius:50%;background:${g.color};display:inline-block"></span>
+                <span style="font-weight:600;color:var(--text)">${escHtml(g.name)}</span>
+              </span>
+              <span style="color:var(--text-muted);font-size:.72rem;font-weight:700">${gDone}/${gTotal}</span>
+            </div>
+            <div style="height:6px;background:var(--border-light);border-radius:100px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${g.color};border-radius:100px;transition:width .5s ease"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  document.getElementById('stats-close')?.addEventListener('click', () => {
+    sidebar.classList.remove('mobile-active');
+  });
+}
+
+/* ── Mobile calendar screen ── */
+function renderMobileCalendar() {
+  const rightPanel = document.getElementById('right-panel');
+  if (!rightPanel) return;
+
+  // Re-render the calendar content (it already has the right structure)
+  const data = loadData();
+  import('./calendar.js').then(({ renderCalendar }) => {
+    renderCalendar(data.tasks, data.groups, openTaskModal);
+  });
+
+  // Add close button if not present
+  if (!rightPanel.querySelector('.mobile-overlay-close')) {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'mobile-overlay-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = 'position:fixed;top:12px;right:14px;z-index:160';
+    closeBtn.addEventListener('click', () => rightPanel.classList.remove('mobile-active'));
+    rightPanel.appendChild(closeBtn);
+  }
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 /* ════════════════════════════════════════
