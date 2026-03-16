@@ -1,0 +1,114 @@
+/* ═══════════════════════════════════════════════════════════
+   TASKFLOW — Animations
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Modal open ── */
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+
+/* ── Task slide-in on add ── */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.task-card.new-task {
+  animation: slideDown .25s ease forwards;
+}
+
+/* ── Task fly-to-done animation ── */
+@keyframes taskFly {
+  0%   { opacity: 1; transform: translate(0, 0)       rotate(0deg)   scale(1);    }
+  40%  { opacity: 1; transform: translate(30px, -60px) rotate(8deg)  scale(.95);  }
+  70%  { opacity: .7; transform: translate(60px,-130px) rotate(18deg) scale(.7);  }
+  100% { opacity: 0; transform: translate(120px,-200px) rotate(30deg) scale(.3);  }
+}
+.task-fly-clone {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2000;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(74,108,247,.25);
+  animation: taskFly .55s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+/* ── Task fade-out on delete ── */
+@keyframes fadeOut {
+  from { opacity: 1; transform: scaleY(1); max-height: 100px; }
+  to   { opacity: 0; transform: scaleY(.5); max-height: 0; padding: 0; margin: 0; }
+}
+.task-card.removing {
+  animation: fadeOut .22s ease forwards;
+  overflow: hidden;
+}
+
+/* ── Donut chart transition (handled via JS inline style, CSS transition below) ── */
+.donut-ring {
+  transition: background .55s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Sidebar group slide-in ── */
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.group-item.new-group {
+  animation: slideRight .2s ease forwards;
+}
+
+/* ── Pulse on badge update ── */
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.nav-badge.pulse, .group-count.pulse {
+  animation: pulse .3s ease;
+}
+
+/* ── Skeleton loading ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--border-light) 25%, var(--border) 50%, var(--border-light) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease infinite;
+  border-radius: var(--radius-xs);
+}
+
+/* ── Confetti burst on task complete ── */
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(60px) rotate(360deg); }
+}
+.confetti-dot {
+  position: fixed;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3000;
+  animation: confettiFall .7s ease forwards;
+}
+
+/* ── Bottom nav tap animation ── */
+@keyframes tabBounce {
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(-5px); }
+  70%  { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+.bottom-nav-item.bounce svg {
+  animation: tabBounce .3s ease;
+}
+
+/* ── Chart legend fade-in ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.legend-item {
+  animation: fadeIn .3s ease both;
+}

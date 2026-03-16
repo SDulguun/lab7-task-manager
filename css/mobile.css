@@ -1,0 +1,152 @@
+/* ═══════════════════════════════════════════════════════════
+   TASKFLOW — Mobile Overrides (<768px)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Bottom Nav (always present, hidden on desktop) ── */
+#bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--bg-card);
+  border-top: 1.5px solid var(--border);
+  z-index: 200;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  justify-items: center;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: .6rem; font-weight: 600; color: var(--text-muted);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition);
+  min-width: 44px;
+}
+.bottom-nav-item.active { color: var(--primary); }
+.bottom-nav-item svg { transition: transform var(--transition); }
+.bottom-nav-item.btn-add-mobile { font-size: 0; } /* hide text label */
+.bottom-nav-item.btn-add-mobile svg { transform: scale(1.2); }
+
+@media (max-width: 767px) {
+  /* Show bottom nav */
+  #bottom-nav { display: grid; }
+
+  /* Collapse 3-column to single column */
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "center";
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Hide sidebar and right panel by default (shown as overlays/tabs) */
+  #sidebar  { display: none; }
+  #right-panel { display: none; }
+
+  /* Center panel takes full width */
+  #center-panel {
+    padding-bottom: 60px; /* space for bottom nav */
+  }
+
+  /* Compact panel header */
+  .panel-header { padding: 14px 14px 0; }
+  .panel-title-row { flex-wrap: wrap; gap: 8px; }
+  #panel-title { font-size: 1.1rem; }
+
+  .search-wrap { flex: 1; }
+  .search-wrap input { width: 100%; }
+
+  .panel-actions { width: 100%; justify-content: space-between; }
+  #btn-add-task { font-size: .78rem; padding: .4rem .8rem; }
+
+  /* Chart section */
+  .chart-section { padding: 12px 14px; }
+  .donut-wrap { width: 78px; height: 78px; }
+  .donut-ring { width: 78px; height: 78px; }
+  .donut-ring::after { inset: 14px; }
+
+  /* Task area */
+  #task-area { padding: 0 14px 14px; }
+
+  /* Task card compact */
+  .task-card { padding: 11px 12px; }
+  .task-actions { opacity: 1; } /* always show on mobile */
+
+  /* Modal full-screen on mobile */
+  .modal-card { width: 96%; padding: 18px; max-height: 85vh; }
+  .form-grid { grid-template-columns: 1fr; }
+
+  /* ── Mobile Calendar Overlay ── */
+  #right-panel.mobile-active {
+    display: flex;
+    position: fixed; inset: 0; top: 0; bottom: 60px;
+    z-index: 100;
+    border-left: none;
+    animation: slideRight .2s ease;
+  }
+
+  /* ── Mobile Sidebar Overlay ── */
+  #sidebar.mobile-active {
+    display: flex;
+    position: fixed; inset: 0; bottom: 60px;
+    z-index: 100;
+    width: 260px;
+    border-right: 1.5px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    animation: slideRight .2s ease;
+  }
+
+  /* Stats screen (mobile home extra content) */
+  .mobile-stats-screen {
+    padding: 14px;
+  }
+
+  /* Week strip calendar */
+  .week-strip {
+    padding: 12px 14px 0;
+  }
+  .week-strip-day { font-size: .68rem; }
+  .week-strip-day-num { font-size: .82rem; }
+
+  /* Upcoming schedule list */
+  .upcoming-list { padding: 0 14px; }
+  .upcoming-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: .85rem;
+  }
+  .upcoming-item:last-child { border-bottom: none; }
+  .upcoming-time { color: var(--text-muted); font-size: .78rem; font-weight: 600; }
+  .upcoming-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+
+  /* Section label */
+  .mobile-section-label {
+    font-size: .78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: var(--text-muted);
+    padding: 14px 14px 6px;
+  }
+}
+
+/* ── Landscape phone ── */
+@media (max-width: 767px) and (orientation: landscape) {
+  .chart-section { padding: 8px 14px; }
+  .donut-wrap { width: 62px; height: 62px; }
+  .donut-ring { width: 62px; height: 62px; }
+  .donut-ring::after { inset: 11px; }
+  #donut-pct { font-size: .9rem; }
+}
+
+/* ── Tablet (768–1023px) — 2-column layout ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root { --sidebar-w: 200px; --right-w: 0px; }
+  #app {
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-areas: "sidebar center";
+  }
+  #right-panel { display: none; }
+}
