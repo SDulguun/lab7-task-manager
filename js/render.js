@@ -186,7 +186,13 @@ function buildCard(task, groups, handlers, isDone) {
   check.innerHTML = `<svg width="10" height="8" viewBox="0 0 10 8" fill="none">
     <path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
-  check.addEventListener('click', e => { e.stopPropagation(); handlers.onComplete(task.id); });
+  check.addEventListener('click', e => {
+    e.stopPropagation();
+    // Ripple
+    check.classList.add('rippling');
+    setTimeout(() => check.classList.remove('rippling'), 400);
+    handlers.onComplete(task.id);
+  });
 
   // Body
   const body = document.createElement('div');

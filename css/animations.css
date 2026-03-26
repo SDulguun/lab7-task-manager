@@ -112,3 +112,70 @@
 .legend-item {
   animation: fadeIn .3s ease both;
 }
+
+/* ── Toast notification ── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(20px); }
+}
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--text);
+  color: white;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  font-weight: 600;
+  z-index: 4000;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn .2s ease forwards;
+  max-width: 280px;
+}
+.toast.out { animation: toastOut .2s ease forwards; }
+
+/* ── Ripple on check button ── */
+@keyframes ripple {
+  from { transform: scale(0); opacity: .5; }
+  to   { transform: scale(2.5); opacity: 0; }
+}
+.task-check::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--success);
+  animation: ripple .4s ease forwards;
+  pointer-events: none;
+  opacity: 0;
+}
+.task-check.rippling::after { opacity: .5; }
+
+/* ── Priority dot pulse on high priority ── */
+@keyframes prioHighPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 107, 95, .5); }
+  50%       { box-shadow: 0 0 0 4px rgba(232, 107, 95, 0); }
+}
+.task-card[data-priority="high"] .prio-dot {
+  animation: prioHighPulse 2s ease infinite;
+}
+
+/* ── Stagger task cards on load ── */
+.task-card:nth-child(1)  { animation-delay: 0ms; }
+.task-card:nth-child(2)  { animation-delay: 40ms; }
+.task-card:nth-child(3)  { animation-delay: 80ms; }
+.task-card:nth-child(4)  { animation-delay: 120ms; }
+.task-card:nth-child(5)  { animation-delay: 160ms; }
+.task-card:nth-child(6)  { animation-delay: 200ms; }
+.task-card:nth-child(n+7){ animation-delay: 240ms; }
+
+/* ── Group item new animation (also triggered on re-render) ── */
+.group-item { animation: slideRight .18s ease both; }
+.group-item:nth-child(1) { animation-delay: 0ms; }
+.group-item:nth-child(2) { animation-delay: 30ms; }
+.group-item:nth-child(3) { animation-delay: 60ms; }
+.group-item:nth-child(n+4){ animation-delay: 90ms; }
