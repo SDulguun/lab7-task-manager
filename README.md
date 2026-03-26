@@ -7,7 +7,11 @@ A beautiful, fully offline-capable task manager built with **vanilla HTML/CSS/JS
 ## Setup
 
 ```bash
-# Clone or download the repo, then simply open:
+# Clone or download the repo, then serve locally:
+python3 -m http.server 8080
+# Open http://localhost:8080
+
+# Or simply open index.html directly (Chrome/Edge):
 open index.html          # macOS
 start index.html         # Windows
 xdg-open index.html      # Linux
@@ -26,12 +30,16 @@ xdg-open index.html      # Linux
 | **Tags** | Label tasks with multi-color tags (Design, Work, Home, Meeting, Idea, Urgent, or custom). Filter by tag in the sidebar. |
 | **Priority** | High / Medium / Low priority with color-coded left border and dot on each task card. |
 | **Status** | Pending → Ongoing → Completed → Cancelled. Filter by status with the chip bar. |
-| **Due Dates** | Set due dates per task. Overdue tasks are highlighted in red. |
-| **Progress Donut** | CSS `conic-gradient` donut chart shows overall and per-group completion percentage — updates live with smooth transitions. |
-| **Weekly Calendar** | Right panel shows a Mon–Fri grid (8am–5pm) with tasks plotted by due date. Navigate weeks with ← / → arrows. Click a task block to edit. |
-| **Fly Animation** | Completing a task triggers a fly-and-shrink animation. Confetti particles burst at the card position. |
+| **Due Dates & Time Scheduling** | Set due dates and optional times per task. Timed tasks appear positioned in calendar hour cells. |
+| **Overdue Detection** | Time-aware overdue detection with glowing card indicators, overdue badges, and priority sorting (overdue tasks float to top). Dedicated "Overdue" filter in the sidebar. |
+| **Due Date Reminders** | Desktop notifications 1 day before a task is due. In-app toast reminders on the day a task is due (within 15 minutes of scheduled time). Notification tracking prevents duplicates across page reloads. |
+| **Progress Donut** | CSS `conic-gradient` donut chart shows overall and per-group completion percentage — updates live with smooth animated counter. Collapsible chart section. |
+| **Weekly Calendar** | Overlay panel with Mon–Fri grid (8am–5pm). Timed tasks positioned in hour cells, all-day tasks in a strip. Navigate weeks with ← / → arrows. Click a task to edit. |
+| **Fly Animation** | Completing a task triggers a fly-and-shrink animation. Confetti particles burst at the card position. All animations tuned for smooth, visible motion. |
 | **Search** | Real-time search across task title, description, and tags. |
-| **Mobile Layout** | Responsive design for phones with bottom navigation (Home, Calendar, Add, Stats) and a 2×2 stats grid. |
+| **Purple/Pink Theme** | Custom purple (#B44AE8) and pink (#E86B9A) gradient palette with cohesive styling across all components. |
+| **Simplified Layout** | Clean 2-column layout with calendar as a slide-in overlay instead of a fixed panel. |
+| **Mobile Layout** | Responsive design for phones with bottom navigation (Home, Calendar, Add, Stats) and a 2x2 stats grid. |
 | **PWA** | `manifest.json` + service worker → installable on iOS/Android, works fully offline. |
 
 ### Keyboard Shortcuts
@@ -51,21 +59,14 @@ xdg-open index.html      # Linux
 ├── css/
 │   ├── style.css       # Layout, components, CSS variables
 │   ├── mobile.css      # Responsive overrides (<768px)
-│   └── animations.css  # Keyframe animations (fly, fade, slide)
+│   └── animations.css  # Keyframe animations (fly, fade, slide, glow)
 ├── js/
-│   ├── storage.js      # localStorage CRUD (addTask, updateTask, …)
-│   ├── app.js          # State + event wiring (main controller)
-│   ├── render.js       # All DOM rendering functions
-│   ├── calendar.js     # Weekly calendar + week strip
-│   └── chart.js        # Progress donut chart
-├── icons/              # SVG icons for PWA manifest
-│
-│   (Lab 7 Phase 1 — Python CLI, kept as history)
-├── src/
-├── tests/
-├── SPEC.md
-├── IMPLEMENTATION_PLAN.md
-└── spec.json
+│   ├── storage.js      # localStorage CRUD + notification tracking
+│   ├── app.js          # State, events, calendar overlay, reminders
+│   ├── render.js       # All DOM rendering (cards, badges, overdue)
+│   ├── calendar.js     # Weekly calendar with timed task positioning
+│   └── chart.js        # Progress donut chart with animated counter
+└── icons/              # SVG icons for PWA manifest
 ```
 
 ---
@@ -77,7 +78,7 @@ All data lives in `localStorage` under the key `taskflow_data`:
 ```json
 {
   "groups": [
-    { "id": "g1", "name": "General", "color": "#4A6CF7" }
+    { "id": "g1", "name": "General", "color": "#B44AE8" }
   ],
   "tasks": [
     {
@@ -89,21 +90,14 @@ All data lives in `localStorage` under the key `taskflow_data`:
       "priority": "high",
       "status": "pending",
       "dueDate": "2026-03-20",
+      "dueTime": "14:00",
       "createdAt": "2026-03-16T10:00:00Z"
     }
   ]
 }
 ```
 
----
-
-## Screenshots
-
-> *(Add screenshots here after first run)*
-
-| Desktop | Mobile |
-|---------|--------|
-| ![Desktop view](screenshots/desktop.png) | ![Mobile view](screenshots/mobile.png) |
+Notification tracking is stored separately under `taskflow_notified` to avoid duplicate reminders across reloads.
 
 ---
 
@@ -113,16 +107,14 @@ All data lives in `localStorage` under the key `taskflow_data`:
 - **CSS3** — custom properties, `conic-gradient` donut, `@keyframes` animations, CSS Grid + Flexbox
 - **Vanilla JavaScript (ES6 modules)** — no framework, no build step
 - **localStorage** — full CRUD persistence
+- **Browser Notifications API** — desktop reminder notifications
 - **PWA** — `manifest.json` + service worker, works offline, installable on any device
 
 ---
 
 ## Development Notes
 
-- Open directly in browser — no server or build step required
 - All JS files use ES6 `import`/`export` modules (requires a modern browser or a local server for `file://` protocol; Chrome/Edge work directly, Firefox may need `http://`)
 - To serve locally: `python3 -m http.server 8080` then open `http://localhost:8080`
-
----
-
-*Phase 1 Python CLI implementation preserved in `src/` and `tests/` as Lab 7 history.*
+- Service worker cache is versioned (`taskflow-v4`); bump the version in `sw.js` when deploying changes
+- Desktop notifications require user permission — the app prompts on first load
