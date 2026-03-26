@@ -6,6 +6,7 @@ import {
   loadData, saveData,
   addTask, updateTask, deleteTask,
   addGroup, updateGroup, deleteGroup,
+  markNotified, wasNotified, cleanNotified,
 } from './storage.js';
 
 import {
@@ -51,6 +52,7 @@ function init() {
   state.groups = data.groups;
   bindStaticEvents();
   rerender();
+  initReminders();
 }
 
 /* ════════════════════════════════════════
@@ -111,10 +113,12 @@ function handleTaskComplete(taskId) {
     flyTaskCard(taskId, () => {
       updateTask(taskId, { status: 'completed' });
       refreshFromStorage();
+      showToast('Task completed!');
     });
   } else {
     updateTask(taskId, { status: 'pending' });
     refreshFromStorage();
+    showToast('Task marked as pending.');
   }
 }
 
@@ -163,6 +167,7 @@ function openTaskModal(taskId = null) {
     setField('task-priority', task.priority);
     setField('task-status',   task.status);
     setField('task-due',      task.dueDate);
+    setField('task-time',     task.dueTime);
     renderTagPicker(task.tags);
   } else {
     title.textContent = 'New Task';
@@ -200,6 +205,7 @@ function handleTaskFormSubmit(e) {
     priority:    document.getElementById('task-priority').value,
     status:      document.getElementById('task-status').value,
     dueDate:     document.getElementById('task-due').value,
+    dueTime:     document.getElementById('task-time').value,
     tags:        getSelectedTags(),
   };
 
@@ -405,7 +411,7 @@ function closeConfirm() {
 function handleTabSwitch(tab) {
   state.mobileTab = tab;
 
-  const sidebar   = document.getElementById('sidebar');
+  const sidebar    = document.getElementById('sidebar');
   const rightPanel = document.getElementById('right-panel');
 
   // Close overlays first
@@ -413,17 +419,19 @@ function handleTabSwitch(tab) {
   rightPanel?.classList.remove('mobile-active');
 
   if (tab === 'home') {
-    // Nothing extra, center panel is default
+    // Default center panel
   } else if (tab === 'calendar') {
+    renderMobileCalendar();
     rightPanel?.classList.add('mobile-active');
   } else if (tab === 'add') {
     openTaskModal(null);
-    return; // don't change active tab indicator
+    return;
   } else if (tab === 'stats') {
+    renderMobileStats();
     sidebar?.classList.add('mobile-active');
   }
 
-  // Update active indicator
+  // Update active indicator + bounce
   document.querySelectorAll('.bottom-nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
     if (btn.dataset.tab === tab) {
@@ -431,6 +439,125 @@ function handleTabSwitch(tab) {
       btn.querySelector('svg')?.addEventListener('animationend', () => btn.classList.remove('bounce'), { once: true });
     }
   });
+}
+
+/* ── Mobile stats screen (fills sidebar overlay) ── */
+function renderMobileStats() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+
+  const data = loadData();
+  const { tasks } = data;
+
+  const completed  = tasks.filter(t => t.status === 'completed').length;
+  const ongoing    = tasks.filter(t => t.status === 'ongoing').length;
+  const pending    = tasks.filter(t => t.status === 'pending').length;
+  const cancelled  = tasks.filter(t => t.status === 'cancelled').length;
+
+  sidebar.innerHTML = `
+    <div style="width:100%;position:relative;padding-bottom:20px">
+      <button class="mobile-overlay-close" id="stats-close">&times;</button>
+      <div class="mobile-date-header">
+        <span>Tasks Overview</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card stat-card--completed">
+          <div class="stat-number">${completed.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card stat-card--ongoing">
+          <div class="stat-number">${ongoing.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Ongoing</div>
+        </div>
+        <div class="stat-card stat-card--pending">
+          <div class="stat-number">${pending.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card stat-card--cancelled">
+          <div class="stat-number">${cancelled.toString().padStart(2,'0')}</div>
+          <div class="stat-label">Cancelled</div>
+        </div>
+      </div>
+      <div class="mobile-section-label">Groups</div>
+      <div style="padding:0 14px">
+        ${data.groups.map(g => {
+          const gTotal = tasks.filter(t => t.groupId === g.id).length;
+          const gDone  = tasks.filter(t => t.groupId === g.id && t.status === 'completed').length;
+          const pct    = gTotal === 0 ? 0 : Math.round(gDone / gTotal * 100);
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;font-size:.8rem">
+              <span style="display:flex;align-items:center;gap:6px">
+                <span style="width:8px;height:8px;border-radius:50%;background:${g.color};display:inline-block"></span>
+                <span style="font-weight:600;color:var(--text)">${escHtml(g.name)}</span>
+              </span>
+              <span style="color:var(--text-muted);font-size:.72rem;font-weight:700">${gDone}/${gTotal}</span>
+            </div>
+            <div style="height:6px;background:var(--border-light);border-radius:100px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${g.color};border-radius:100px;transition:width .5s ease"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  document.getElementById('stats-close')?.addEventListener('click', () => {
+    sidebar.classList.remove('mobile-active');
+  });
+}
+
+/* ── Mobile calendar screen ── */
+function renderMobileCalendar() {
+  const rightPanel = document.getElementById('right-panel');
+  if (!rightPanel) return;
+
+  // Re-render the calendar content (it already has the right structure)
+  const data = loadData();
+  import('./calendar.js').then(({ renderCalendar }) => {
+    renderCalendar(data.tasks, data.groups, openTaskModal);
+  });
+
+  // Add close button if not present
+  if (!rightPanel.querySelector('.mobile-overlay-close')) {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'mobile-overlay-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = 'position:fixed;top:12px;right:14px;z-index:160';
+    closeBtn.addEventListener('click', () => rightPanel.classList.remove('mobile-active'));
+    rightPanel.appendChild(closeBtn);
+  }
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ════════════════════════════════════════
+   CALENDAR OVERLAY
+   ════════════════════════════════════════ */
+function toggleCalendarOverlay() {
+  const rightPanel = document.getElementById('right-panel');
+  if (!rightPanel) return;
+
+  if (rightPanel.classList.contains('overlay-active')) {
+    closeCalendarOverlay();
+  } else {
+    rightPanel.classList.add('overlay-active');
+    // Add backdrop
+    if (!document.querySelector('.cal-overlay-backdrop')) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'cal-overlay-backdrop';
+      backdrop.addEventListener('click', closeCalendarOverlay);
+      document.body.appendChild(backdrop);
+    }
+    // Render calendar content
+    const data = loadData();
+    renderCalendar(data.tasks, data.groups, openTaskModal);
+  }
+}
+
+function closeCalendarOverlay() {
+  document.getElementById('right-panel')?.classList.remove('overlay-active');
+  document.querySelector('.cal-overlay-backdrop')?.remove();
 }
 
 /* ════════════════════════════════════════
@@ -502,6 +629,15 @@ function bindStaticEvents() {
     rerender();
   });
 
+  /* ── Calendar toggle ── */
+  document.getElementById('btn-toggle-calendar')?.addEventListener('click', toggleCalendarOverlay);
+
+  /* ── Chart toggle ── */
+  const chartSummary = document.getElementById('chart-summary');
+  chartSummary?.addEventListener('click', () => {
+    document.getElementById('chart-section')?.classList.toggle('collapsed');
+  });
+
   /* ── Add Task button ── */
   document.getElementById('btn-add-task')?.addEventListener('click', () => openTaskModal(null));
 
@@ -546,6 +682,9 @@ function bindStaticEvents() {
   document.getElementById('confirm-cancel')?.addEventListener('click', closeConfirm);
   document.querySelector('#confirm-dialog .modal-backdrop')?.addEventListener('click', closeConfirm);
 
+  /* ── Calendar close ── */
+  document.getElementById('cal-close')?.addEventListener('click', closeCalendarOverlay);
+
   /* ── Calendar nav ── */
   document.getElementById('cal-prev')?.addEventListener('click', () => {
     prevWeek();
@@ -569,6 +708,7 @@ function bindStaticEvents() {
       closeTaskModal();
       closeGroupModal();
       closeConfirm();
+      closeCalendarOverlay();
       document.getElementById('sidebar')?.classList.remove('mobile-active');
       document.getElementById('right-panel')?.classList.remove('mobile-active');
     }
@@ -578,6 +718,116 @@ function bindStaticEvents() {
       openTaskModal(null);
     }
   });
+}
+
+/* ════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ════════════════════════════════════════ */
+function showToast(msg, duration = 2500) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('out');
+    toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  }, duration);
+}
+
+// Expose for use in handlers
+window._showToast = showToast;
+
+/* ════════════════════════════════════════
+   REMINDERS & NOTIFICATIONS
+   ════════════════════════════════════════ */
+function initReminders() {
+  // Request notification permission
+  if ('Notification' in window && Notification.permission === 'default') {
+    // Small delay so the app loads first
+    setTimeout(() => {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          showToast('Reminders enabled! You\'ll get notified before tasks are due.');
+        }
+      });
+    }, 2000);
+  }
+
+  // Clean up old notification records
+  cleanNotified();
+
+  // Run first check immediately, then every 60 seconds
+  checkReminders();
+  setInterval(checkReminders, 60000);
+}
+
+function checkReminders() {
+  const data = loadData();
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+  const nowTime = new Date().toTimeString().slice(0, 5); // "HH:MM"
+
+  for (const task of data.tasks) {
+    // Skip completed/cancelled tasks
+    if (task.status === 'completed' || task.status === 'cancelled') continue;
+    if (!task.dueDate) continue;
+
+    // Desktop notification: 1 day before due date
+    if (task.dueDate === tomorrowStr && !wasNotified(task.id, 'desktop')) {
+      sendDesktopNotification(
+        'Task due tomorrow',
+        `"${task.title}" is due tomorrow${task.dueTime ? ' at ' + formatTime12h(task.dueTime) : ''}.`
+      );
+      markNotified(task.id, 'desktop');
+    }
+
+    // In-app toast: same day, within 15 min of due time
+    if (task.dueDate === todayStr && task.dueTime && !wasNotified(task.id, 'toast')) {
+      const minutesUntilDue = getMinutesDiff(nowTime, task.dueTime);
+      if (minutesUntilDue >= 0 && minutesUntilDue <= 15) {
+        showToast(`Reminder: "${task.title}" is due in ${minutesUntilDue} min!`, 5000);
+        markNotified(task.id, 'toast');
+      }
+    }
+
+    // In-app toast: due today (no specific time), remind once in the morning
+    if (task.dueDate === todayStr && !task.dueTime && !wasNotified(task.id, 'toast')) {
+      showToast(`Reminder: "${task.title}" is due today!`, 5000);
+      markNotified(task.id, 'toast');
+    }
+  }
+}
+
+function sendDesktopNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const notif = new Notification(title, {
+    body,
+    icon: 'icons/icon-192.svg',
+  });
+  notif.addEventListener('click', () => {
+    window.focus();
+    notif.close();
+  });
+}
+
+function formatTime12h(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'pm' : 'am';
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${m.toString().padStart(2, '0')}${period}`;
+}
+
+function getMinutesDiff(nowTime, dueTime) {
+  const [nowH, nowM] = nowTime.split(':').map(Number);
+  const [dueH, dueM] = dueTime.split(':').map(Number);
+  return (dueH * 60 + dueM) - (nowH * 60 + nowM);
 }
 
 /* ════════════════════════════════════════
