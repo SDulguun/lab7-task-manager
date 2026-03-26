@@ -51,6 +51,9 @@ export function renderGroups(groups, tasks, activeGroupId, onSelect, onEdit) {
         </svg>
       </button>`;
 
+    // Set CSS var for color accent strip
+    li.style.setProperty('--group-color', g.color);
+
     li.querySelector('.group-edit-btn').addEventListener('click', e => {
       e.stopPropagation();
       onEdit(g.id);
@@ -166,9 +169,15 @@ function buildCard(task, groups, handlers, isDone) {
   const isOverdue = task.dueDate && task.dueDate < todayStr && task.status !== 'completed';
 
   const card = document.createElement('div');
+  const todayISOVal    = todayISO();
+  const tomorrowISOVal = tomorrowISO();
+  const dueAttr = task.dueDate === todayISOVal ? 'today'
+                : task.dueDate === tomorrowISOVal ? 'tomorrow' : '';
+
   card.className = 'task-card' + (isDone ? ' completed' : '');
   card.dataset.id       = task.id;
   card.dataset.priority = task.priority;
+  if (dueAttr) card.dataset.due = dueAttr;
 
   // Checkbox
   const check = document.createElement('button');
