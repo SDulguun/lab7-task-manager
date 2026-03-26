@@ -8,7 +8,7 @@ import { renderCalendar } from './calendar.js';
 /* ── Tag colour map ── */
 export const TAG_COLORS = {
   Design:  { bg: '#F3E8FF', text: '#7C3AED' },
-  Work:    { bg: '#EEF1FF', text: '#4A6CF7' },
+  Work:    { bg: '#F5EAFF', text: '#B44AE8' },
   Home:    { bg: '#E8F8F0', text: '#059669' },
   Meeting: { bg: '#FFE8E6', text: '#DC2626' },
   Idea:    { bg: '#FFF9E6', text: '#D97706' },
@@ -17,7 +17,7 @@ export const TAG_COLORS = {
 const DEFAULT_TAG = { bg: '#F3F4F6', text: '#6B7280' };
 
 export const GROUP_COLORS = [
-  '#4A6CF7','#E86B5F','#34C37B','#F5A623','#C77DFF',
+  '#B44AE8','#E86B9A','#34C37B','#F5A623','#C77DFF',
   '#06B6D4','#F43F5E','#84CC16','#FB923C','#A78BFA',
 ];
 
@@ -51,6 +51,9 @@ export function renderGroups(groups, tasks, activeGroupId, onSelect, onEdit) {
         </svg>
       </button>`;
 
+    // Set CSS var for color accent strip
+    li.style.setProperty('--group-color', g.color);
+
     li.querySelector('.group-edit-btn').addEventListener('click', e => {
       e.stopPropagation();
       onEdit(g.id);
@@ -73,6 +76,7 @@ export function renderBadges(tasks) {
   setBadge('badge-all',      tasks.filter(t => t.status !== 'completed').length);
   setBadge('badge-today',    tasks.filter(t => t.dueDate === todayStr && t.status !== 'completed').length);
   setBadge('badge-tomorrow', tasks.filter(t => t.dueDate === tomorrowStr && t.status !== 'completed').length);
+  setBadge('badge-overdue',  tasks.filter(t => t.dueDate && t.dueDate < todayStr && t.status !== 'completed' && t.status !== 'cancelled').length);
 }
 
 function setBadge(id, count) {
@@ -103,6 +107,11 @@ export function renderTagFilters(tasks, activeTag, onTag) {
   // Collect unique tags
   const tagSet = new Set();
   tasks.forEach(t => t.tags.forEach(tag => tagSet.add(tag)));
+
+  // Hide the entire Tags section if no tags exist
+  const tagsSection = container.closest('.sidebar-section');
+  if (tagsSection) tagsSection.style.display = tagSet.size === 0 ? 'none' : '';
+
   container.innerHTML = '';
 
   for (const tag of [...tagSet].sort()) {
@@ -163,12 +172,22 @@ export function renderTasks(tasks, groups, handlers) {
 function buildCard(task, groups, handlers, isDone) {
   const group = groups.find(g => g.id === task.groupId);
   const todayStr = todayISO();
-  const isOverdue = task.dueDate && task.dueDate < todayStr && task.status !== 'completed';
+  const nowTimeStr = new Date().toTimeString().slice(0, 5);
+  const isOverdue = task.dueDate && task.status !== 'completed' && task.status !== 'cancelled' && (
+    task.dueDate < todayStr ||
+    (task.dueDate === todayStr && task.dueTime && task.dueTime < nowTimeStr)
+  );
 
   const card = document.createElement('div');
-  card.className = 'task-card' + (isDone ? ' completed' : '');
+  const todayISOVal    = todayISO();
+  const tomorrowISOVal = tomorrowISO();
+  const dueAttr = task.dueDate === todayISOVal ? 'today'
+                : task.dueDate === tomorrowISOVal ? 'tomorrow' : '';
+
+  card.className = 'task-card' + (isDone ? ' completed' : '') + (isOverdue ? ' overdue' : '');
   card.dataset.id       = task.id;
   card.dataset.priority = task.priority;
+  if (dueAttr) card.dataset.due = dueAttr;
 
   // Checkbox
   const check = document.createElement('button');
@@ -177,7 +196,13 @@ function buildCard(task, groups, handlers, isDone) {
   check.innerHTML = `<svg width="10" height="8" viewBox="0 0 10 8" fill="none">
     <path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
-  check.addEventListener('click', e => { e.stopPropagation(); handlers.onComplete(task.id); });
+  check.addEventListener('click', e => {
+    e.stopPropagation();
+    // Ripple
+    check.classList.add('rippling');
+    setTimeout(() => check.classList.remove('rippling'), 400);
+    handlers.onComplete(task.id);
+  });
 
   // Body
   const body = document.createElement('div');
@@ -216,14 +241,15 @@ function buildCard(task, groups, handlers, isDone) {
     meta.appendChild(tags);
   }
 
-  // Due date
+  // Due date + time
   if (task.dueDate) {
+    const timeStr = task.dueTime ? ` ${formatTime(task.dueTime)}` : '';
     const due = document.createElement('div');
     due.className = 'task-due' + (isOverdue ? ' overdue' : '');
     due.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
       <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
       <path d="M4 1v2M8 1v2M1 5h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-    </svg>${formatDate(task.dueDate)}`;
+    </svg>${formatDate(task.dueDate)}${timeStr}`;
     meta.appendChild(due);
   }
 
@@ -300,6 +326,8 @@ export function renderAll(state) {
     visible = visible.filter(t => t.dueDate === todayStr);
   } else if (activeFilter === 'tomorrow') {
     visible = visible.filter(t => t.dueDate === tomorrowStr);
+  } else if (activeFilter === 'overdue') {
+    visible = visible.filter(t => t.dueDate && t.dueDate < todayStr && t.status !== 'completed' && t.status !== 'cancelled');
   }
 
   // Tag filter
@@ -316,10 +344,15 @@ export function renderAll(state) {
     }
   }
 
-  // Sort: pending/ongoing first, then by priority, then by due date
+  // Sort: overdue first, then status, then priority, then due date
   const PRIO = { high: 0, medium: 1, low: 2 };
   const STATUS_ORDER = { ongoing: 0, pending: 1, cancelled: 2, completed: 3 };
   visible.sort((a, b) => {
+    // Overdue tasks float to top
+    const aOverdue = a.dueDate && a.dueDate < todayStr && a.status !== 'completed' && a.status !== 'cancelled' ? 0 : 1;
+    const bOverdue = b.dueDate && b.dueDate < todayStr && b.status !== 'completed' && b.status !== 'cancelled' ? 0 : 1;
+    if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+
     const so = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
     if (so !== 0) return so;
     const po = (PRIO[a.priority] ?? 9) - (PRIO[b.priority] ?? 9);
@@ -370,7 +403,7 @@ export function flyTaskCard(taskId, onDone) {
 }
 
 function spawnConfetti(cx, cy) {
-  const colors = ['#4A6CF7','#34C37B','#F5A623','#E86B5F','#C77DFF'];
+  const colors = ['#B44AE8','#34C37B','#F5A623','#E86B9A','#C77DFF'];
   for (let i = 0; i < 7; i++) {
     const dot = document.createElement('div');
     dot.className = 'confetti-dot';
@@ -402,4 +435,11 @@ function formatDate(iso) {
   if (iso === todayStr)     return 'Today';
   if (iso === tomorrowStr)  return 'Tomorrow';
   return `${parseInt(m)}/${parseInt(d)}/${y.slice(2)}`;
+}
+function formatTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'pm' : 'am';
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour12}:${m.toString().padStart(2, '0')}${period}`;
 }
