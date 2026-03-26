@@ -2,7 +2,7 @@
    sw.js — Service Worker (offline support + PWA install)
    ═══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'taskflow-v1';
+const CACHE_NAME = 'taskflow-v4';
 
 const ASSETS = [
   './',

@@ -8,13 +8,19 @@
   to   { opacity: 1; transform: translateY(0)    scale(1);   }
 }
 
+/* ── Slide-in from right (calendar overlay) ── */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: .7; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
 /* ── Task slide-in on add ── */
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .task-card.new-task {
-  animation: slideDown .25s ease forwards;
+  animation: slideDown .5s ease forwards;
 }
 
 /* ── Task fly-to-done animation ── */
@@ -29,8 +35,8 @@
   pointer-events: none;
   z-index: 2000;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(74,108,247,.25);
-  animation: taskFly .55s cubic-bezier(.4,0,.2,1) forwards;
+  box-shadow: 0 8px 32px rgba(180,74,232,.25);
+  animation: taskFly 1s cubic-bezier(.4,0,.2,1) forwards;
 }
 
 /* ── Task fade-out on delete ── */
@@ -39,13 +45,13 @@
   to   { opacity: 0; transform: scaleY(.5); max-height: 0; padding: 0; margin: 0; }
 }
 .task-card.removing {
-  animation: fadeOut .22s ease forwards;
+  animation: fadeOut .45s ease forwards;
   overflow: hidden;
 }
 
 /* ── Donut chart transition (handled via JS inline style, CSS transition below) ── */
 .donut-ring {
-  transition: background .55s cubic-bezier(.4,0,.2,1);
+  transition: background .8s cubic-bezier(.4,0,.2,1);
 }
 
 /* ── Sidebar group slide-in ── */
@@ -54,7 +60,7 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 .group-item.new-group {
-  animation: slideRight .2s ease forwards;
+  animation: slideRight .4s ease forwards;
 }
 
 /* ── Pulse on badge update ── */
@@ -64,7 +70,7 @@
   100% { transform: scale(1); }
 }
 .nav-badge.pulse, .group-count.pulse {
-  animation: pulse .3s ease;
+  animation: pulse .5s ease;
 }
 
 /* ── Skeleton loading ── */
@@ -75,14 +81,14 @@
 .skeleton {
   background: linear-gradient(90deg, var(--border-light) 25%, var(--border) 50%, var(--border-light) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.2s ease infinite;
+  animation: shimmer 1.8s ease infinite;
   border-radius: var(--radius-xs);
 }
 
 /* ── Confetti burst on task complete ── */
 @keyframes confettiFall {
   0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
-  100% { opacity: 0; transform: translateY(60px) rotate(360deg); }
+  100% { opacity: 0; transform: translateY(80px) rotate(360deg); }
 }
 .confetti-dot {
   position: fixed;
@@ -90,7 +96,7 @@
   border-radius: 50%;
   pointer-events: none;
   z-index: 3000;
-  animation: confettiFall .7s ease forwards;
+  animation: confettiFall 1.2s ease forwards;
 }
 
 /* ── Bottom nav tap animation ── */
@@ -101,7 +107,7 @@
   100% { transform: translateY(0); }
 }
 .bottom-nav-item.bounce svg {
-  animation: tabBounce .3s ease;
+  animation: tabBounce .5s ease;
 }
 
 /* ── Chart legend fade-in ── */
@@ -110,5 +116,79 @@
   to   { opacity: 1; }
 }
 .legend-item {
-  animation: fadeIn .3s ease both;
+  animation: fadeIn .5s ease both;
 }
+
+/* ── Toast notification ── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(20px); }
+}
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--text);
+  color: white;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  font-weight: 600;
+  z-index: 4000;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn .35s ease forwards;
+  max-width: 280px;
+}
+.toast.out { animation: toastOut .35s ease forwards; }
+
+/* ── Ripple on check button ── */
+@keyframes ripple {
+  from { transform: scale(0); opacity: .5; }
+  to   { transform: scale(2.5); opacity: 0; }
+}
+.task-check::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--success);
+  animation: ripple .7s ease forwards;
+  pointer-events: none;
+  opacity: 0;
+}
+.task-check.rippling::after { opacity: .5; }
+
+/* ── Overdue card glow ── */
+@keyframes overdueGlow {
+  0%, 100% { box-shadow: var(--shadow-sm); }
+  50% { box-shadow: 0 0 0 2px rgba(232,107,95,.15), var(--shadow-sm); }
+}
+.task-card.overdue { animation: overdueGlow 4s ease infinite; }
+
+/* ── Priority dot pulse on high priority ── */
+@keyframes prioHighPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 107, 95, .5); }
+  50%       { box-shadow: 0 0 0 4px rgba(232, 107, 95, 0); }
+}
+.task-card[data-priority="high"] .prio-dot {
+  animation: prioHighPulse 3s ease infinite;
+}
+
+/* ── Stagger task cards on load ── */
+.task-card:nth-child(1)  { animation-delay: 0ms; }
+.task-card:nth-child(2)  { animation-delay: 80ms; }
+.task-card:nth-child(3)  { animation-delay: 160ms; }
+.task-card:nth-child(4)  { animation-delay: 240ms; }
+.task-card:nth-child(5)  { animation-delay: 320ms; }
+.task-card:nth-child(6)  { animation-delay: 400ms; }
+.task-card:nth-child(n+7){ animation-delay: 480ms; }
+
+/* ── Group item new animation (also triggered on re-render) ── */
+.group-item { animation: slideRight .35s ease both; }
+.group-item:nth-child(1) { animation-delay: 0ms; }
+.group-item:nth-child(2) { animation-delay: 60ms; }
+.group-item:nth-child(3) { animation-delay: 120ms; }
+.group-item:nth-child(n+4){ animation-delay: 180ms; }

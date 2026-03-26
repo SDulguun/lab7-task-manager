@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#4A6CF7" />
+  <meta name="theme-color" content="#B44AE8" />
   <meta name="description" content="Task Manager — Organize your work" />
   <title>TaskFlow</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/animations.css" />
-  <link rel="stylesheet" href="css/mobile.css" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
+  <link rel="stylesheet" href="css/animations.css?v=4" />
+  <link rel="stylesheet" href="css/mobile.css?v=4" />
 </head>
 <body>
   <!-- ══════════════════════════════════════ -->
@@ -23,7 +23,7 @@
       <div class="sidebar-header">
         <span class="app-logo">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <rect width="22" height="22" rx="6" fill="#4A6CF7"/>
+            <rect width="22" height="22" rx="6" fill="#B44AE8"/>
             <path d="M6 11l3.5 3.5L16 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           TaskFlow
@@ -57,6 +57,14 @@
           </svg>
           Tomorrow
           <span class="nav-badge" id="badge-tomorrow">0</span>
+        </button>
+        <button class="nav-item" data-filter="overdue">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v6M8 11v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          Overdue
+          <span class="nav-badge" id="badge-overdue">0</span>
         </button>
       </nav>
 
@@ -93,6 +101,13 @@
               </svg>
               <input type="text" id="search-input" placeholder="Search tasks…" />
             </div>
+            <button id="btn-toggle-calendar" class="btn-secondary btn-sm" title="Toggle calendar">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="1" y="2.5" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M4 1v3M10 1v3M1 6h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Calendar
+            </button>
             <button id="btn-add-task" class="btn-primary">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M7 2v10M2 7h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -112,16 +127,22 @@
         </div>
       </div>
 
-      <!-- Progress donut -->
-      <div id="chart-section" class="chart-section">
-        <div id="donut-wrap" class="donut-wrap">
-          <div id="donut-ring" class="donut-ring"></div>
-          <div class="donut-center">
-            <span id="donut-pct">0%</span>
-            <span class="donut-label">done</span>
-          </div>
+      <!-- Progress donut (collapsible) -->
+      <div id="chart-section" class="chart-section collapsed">
+        <div class="chart-summary" id="chart-summary">
+          <span id="chart-summary-text">0/0 tasks done</span>
+          <button id="btn-toggle-chart" class="icon-btn" title="Expand chart">&#9660;</button>
         </div>
-        <div id="chart-legend" class="chart-legend"></div>
+        <div class="chart-detail" id="chart-detail">
+          <div id="donut-wrap" class="donut-wrap">
+            <div id="donut-ring" class="donut-ring"></div>
+            <div class="donut-center">
+              <span id="donut-pct">0%</span>
+              <span class="donut-label">done</span>
+            </div>
+          </div>
+          <div id="chart-legend" class="chart-legend"></div>
+        </div>
       </div>
 
       <!-- Task list area -->
@@ -149,11 +170,12 @@
     <!-- ── RIGHT PANEL ── -->
     <aside id="right-panel">
       <div class="panel-header">
-        <h2 id="calendar-title">This Week</h2>
         <div class="cal-nav">
-          <button id="cal-prev" class="icon-btn">&#8592;</button>
-          <button id="cal-next" class="icon-btn">&#8594;</button>
+          <button id="cal-prev" class="icon-btn" title="Previous week">&#8592;</button>
+          <button id="cal-next" class="icon-btn" title="Next week">&#8594;</button>
         </div>
+        <h2 id="calendar-title">This Week</h2>
+        <button id="cal-close" class="icon-btn" title="Close calendar">&#10005;</button>
       </div>
       <div id="calendar-view" class="calendar-view"></div>
     </aside>
@@ -175,7 +197,7 @@
       </button>
       <button class="bottom-nav-item btn-add-mobile" data-tab="add">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <circle cx="11" cy="11" r="10" fill="#4A6CF7"/>
+          <circle cx="11" cy="11" r="10" fill="#B44AE8"/>
           <path d="M11 6v10M6 11h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
@@ -246,6 +268,13 @@
           </div>
         </div>
         <div class="form-row">
+          <label for="task-time">Schedule Time</label>
+          <div class="time-schedule-row">
+            <input type="time" id="task-time" />
+            <span class="time-hint">Set a specific time for this task</span>
+          </div>
+        </div>
+        <div class="form-row">
           <label>Tags</label>
           <div id="tag-picker" class="tag-picker"></div>
           <div class="tag-custom-row">
@@ -307,7 +336,7 @@
   <!-- Fly animation clone target (off-screen) -->
   <div id="fly-target" aria-hidden="true"></div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=4"></script>
   <script>
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {

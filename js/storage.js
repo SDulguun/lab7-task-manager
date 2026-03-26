@@ -29,7 +29,7 @@ export function saveData(data) {
 function defaultData() {
   return {
     groups: [
-      { id: 'g1', name: 'General',  color: '#4A6CF7' },
+      { id: 'g1', name: 'General',  color: '#B44AE8' },
       { id: 'g2', name: 'Work',     color: '#E86B5F' },
       { id: 'g3', name: 'Personal', color: '#34C37B' },
     ],
@@ -43,6 +43,7 @@ function defaultData() {
         priority: 'high',
         status: 'pending',
         dueDate: new Date(Date.now() + 86400000).toISOString().slice(0,10), // tomorrow
+        dueTime: '14:00',
         createdAt: new Date().toISOString(),
       },
       {
@@ -54,6 +55,7 @@ function defaultData() {
         priority: 'medium',
         status: 'pending',
         dueDate: new Date().toISOString().slice(0,10), // today
+        dueTime: '',
         createdAt: new Date().toISOString(),
       },
       {
@@ -65,6 +67,7 @@ function defaultData() {
         priority: 'low',
         status: 'completed',
         dueDate: new Date().toISOString().slice(0,10),
+        dueTime: '09:00',
         createdAt: new Date().toISOString(),
       },
     ],
@@ -89,6 +92,7 @@ export function addTask(fields) {
     priority: fields.priority || 'medium',
     status: fields.status || 'pending',
     dueDate: fields.dueDate || '',
+    dueTime: fields.dueTime || '',
     createdAt: new Date().toISOString(),
   };
   data.tasks.push(task);
@@ -136,7 +140,7 @@ export function addGroup(fields) {
   const group = {
     id: uid(),
     name: fields.name || 'New Group',
-    color: fields.color || '#4A6CF7',
+    color: fields.color || '#B44AE8',
   };
   data.groups.push(group);
   saveData(data);
@@ -168,6 +172,45 @@ export function deleteGroup(id) {
   saveData(data);
 }
 
+/* ── Notification tracking ── */
+const NOTIFIED_KEY = 'taskflow_notified';
+
+/** @returns {{ [taskId: string]: string }} — taskId → date notified */
+export function loadNotified() {
+  try {
+    return JSON.parse(localStorage.getItem(NOTIFIED_KEY)) || {};
+  } catch { return {}; }
+}
+
+export function saveNotified(notified) {
+  localStorage.setItem(NOTIFIED_KEY, JSON.stringify(notified));
+}
+
+/** Mark a task as notified today */
+export function markNotified(taskId, type) {
+  const notified = loadNotified();
+  notified[`${taskId}_${type}`] = new Date().toISOString().slice(0, 10);
+  saveNotified(notified);
+}
+
+/** Check if a task was already notified for a given type */
+export function wasNotified(taskId, type) {
+  const notified = loadNotified();
+  return !!notified[`${taskId}_${type}`];
+}
+
+/** Clean up notification entries older than 2 days */
+export function cleanNotified() {
+  const notified = loadNotified();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 2);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  for (const key of Object.keys(notified)) {
+    if (notified[key] < cutoffStr) delete notified[key];
+  }
+  saveNotified(notified);
+}
+
 /* ── Helpers ── */
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -175,5 +218,5 @@ function uid() {
 
 /**
  * @typedef {{ id:string, name:string, color:string }} Group
- * @typedef {{ id:string, title:string, description:string, groupId:string, tags:string[], priority:'low'|'medium'|'high', status:'pending'|'ongoing'|'completed'|'cancelled', dueDate:string, createdAt:string }} Task
+ * @typedef {{ id:string, title:string, description:string, groupId:string, tags:string[], priority:'low'|'medium'|'high', status:'pending'|'ongoing'|'completed'|'cancelled', dueDate:string, dueTime:string, createdAt:string }} Task
  */
