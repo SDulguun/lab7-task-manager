@@ -639,6 +639,47 @@ a { color: inherit; text-decoration: none; }
 }
 .cal-event:hover { filter: brightness(.9); }
 
+/* All-day strip */
+.cal-allday-col {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 2px 1px;
+  min-height: 28px;
+}
+.cal-allday-event {
+  font-size: .62rem;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 3px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: filter var(--transition);
+}
+.cal-allday-event:hover { filter: brightness(.88); }
+.cal-more {
+  font-size: .6rem; color: var(--text-muted); padding: 0 3px; font-weight: 700;
+}
+
+/* Current time indicator */
+.cal-now-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 1px;
+  z-index: 2;
+}
+.cal-now-line::before {
+  content: '';
+  position: absolute;
+  left: -3px; top: -3px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
 /* Week strip (mobile calendar) */
 .week-strip {
   display: flex; gap: 4px; margin-bottom: 12px;
